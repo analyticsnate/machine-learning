@@ -1,16 +1,18 @@
 import sys
+import os
 from PyQt5.QtWidgets import QDialog, QApplication
 from metawear_gui import *
 from mbientlab.metawear import MetaWear, libmetawear, parse_value, create_voidp, create_voidp_int
 from mbientlab.metawear.cbindings import *
 import time
 from threading import Event
+from pandas import DataFrame
 
 class MyForm(QDialog):
     def __init__(self):
 
         super().__init__()
-        self.ui = Ui_Dialog()
+        self.ui = Ui_MetawearApp()
         self.ui.setupUi(self)
         self.ui.buttonConnect.clicked.connect(self.buttonConnnect)
         self.ui.buttonGatherData.clicked.connect(self.buttonGatherData)
@@ -38,10 +40,11 @@ class MyForm(QDialog):
             self.ui.labelGatherData.setText('Failed')
 
     def buttonDownloadData(self):
+        name = self.ui.nameText.text()
         self.ui.labelDownloadData.setText('Downloading...')
         self.ui.labelDownloadData.repaint()
 
-        if s.download_data() == 1:
+        if s.download_data(name) == 1:
             self.ui.labelDownloadData.setText('Data saved.')
         else:
             self.ui.labelDownloadData.setText('Failed')
@@ -53,8 +56,7 @@ class MyForm(QDialog):
 class Sensor():
     def __init__(self):
         self.device = MetaWear('C7:CF:3D:0E:D9:0E')
-        #self.signal = None
-        #self.logger = None
+        self.default_name = '_data_log.txt'
 
     def connect_to_sensor(self):
         self.device.connect()
@@ -80,7 +82,7 @@ class Sensor():
 
         return 1
 
-    def download_data(self):
+    def download_data(self, name):
         try:
             libmetawear.mbl_mw_settings_set_connection_parameters(self.device.board, 7.5, 7.5, 0, 6000)
             time.sleep(1.0)
@@ -97,21 +99,40 @@ class Sensor():
                 received_unhandled_entry = cast(None, FnVoid_VoidP_DataP))
 
             # print('Opening log file to write')
-            f = open('data_log.txt', 'a')
+            f = open(name + self.default_name, 'a')
 
             callback = FnVoid_VoidP_DataP(lambda ctx, p: print("{epoch: %d, value: %s}" % (p.contents.epoch, parse_value(p)), file=f))
             libmetawear.mbl_mw_logger_subscribe(self.logger, None, callback)
             libmetawear.mbl_mw_logging_download(self.device.board, 0, byref(download_handler))
             e.wait()
 
-            # print('Closing log file')
+            # close the file, process the data into a csv, then delete the original file
             f.close()
+            self.process_data(name)
+            os.remove(name + self.default_name)
 
             return 1
 
         except RuntimeError as err:
             print(err)
             return 0
+
+    def process_data(self, name):
+        rows = {}
+        for i in open(name + self.default_name, 'r'):
+            epoch = i[8:21] 
+            xyz = i[35:-3]
+            xyz = xyz.replace(' ', '')
+            xyz = xyz.replace(':', '')
+            xyz = xyz.replace(',', '')
+            xyz = xyz.replace('y', ' ')
+            xyz = xyz.replace('z', ' ')
+            x,y,z = xyz.split()
+            
+            rows[epoch] =  [x, y, z]
+
+        df = DataFrame(rows.values(), index=rows.keys(), columns=['X', 'Y', 'Z'])
+        df.to_csv(name + '_data.csv')
 
     def reset_device(self):
         libmetawear.mbl_mw_debug_reset(self.device.board)
