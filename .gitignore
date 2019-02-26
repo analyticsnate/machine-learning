@@ -102,7 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-roomba_tracking/data_log.txt
 roomba_tracking/.metawear/C7CF3D0ED90E.json
 roomba_tracking/mbient_log_acc.py
 roomba_tracking/metawear_cleanse.py
+roomba_tracking/data/
+roomba_tracking/logs/
