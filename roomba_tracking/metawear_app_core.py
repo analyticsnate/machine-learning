@@ -12,7 +12,7 @@ from datetime import datetime
 
 __datefmt__ = '%Y%m%d %I:%M:%S'
 __now__ = str(int(time.time()))
-__here__ = os.getcwd()
+__here__ = '/home/nate/Projects/machine-learning/roomba_tracking'
 
 logging.basicConfig(filename='{0}/logs/{1}_metawear.log'.format(__here__, __now__), filemode='w', level=logging.INFO, 
     format='%(asctime)s - %(levelname)s - %(message)s', datefmt=__datefmt__)
