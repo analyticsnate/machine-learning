@@ -12,8 +12,9 @@ from datetime import datetime
 
 __datefmt__ = '%Y%m%d %I:%M:%S'
 __now__ = str(int(time.time()))
+__here__ = os.getcwd()
 
-logging.basicConfig(filename='logs/{0}_metawear.log'.format(__now__), filemode='w', level=logging.INFO, 
+logging.basicConfig(filename='{0}/logs/{1}_metawear.log'.format(__here__, __now__), filemode='w', level=logging.INFO, 
     format='%(asctime)s - %(levelname)s - %(message)s', datefmt=__datefmt__)
 
 class MyForm(QDialog):
@@ -147,7 +148,7 @@ class Sensor():
             rows[epoch] =  [x, y, z]
 
         df = DataFrame(rows.values(), index=rows.keys(), columns=['X', 'Y', 'Z'])
-        df.to_csv('/home/nate/Projects/machine-learning/roomba_tracking/data/{0}_{1}_data.csv'.format(__now__, name))
+        df.to_csv('{0}/data/{1}_{2}_data.csv'.format(__here__, __now__, name))
 
     def reset_device(self):
         libmetawear.mbl_mw_debug_reset(self.device.board)
