@@ -7,6 +7,14 @@ from mbientlab.metawear.cbindings import *
 import time
 from threading import Event
 from pandas import DataFrame
+import logging
+from datetime import datetime
+
+__datefmt__ = '%Y%m%d %I:%M:%S'
+__now__ = str(int(time.time()))
+
+logging.basicConfig(filename='logs/{0}_metawear.log'.format(__now__), filemode='w', level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s', datefmt=__datefmt__)
 
 class MyForm(QDialog):
     def __init__(self):
@@ -55,13 +63,15 @@ class MyForm(QDialog):
 
 class Sensor():
     def __init__(self):
+        
         self.device = MetaWear('C7:CF:3D:0E:D9:0E')
-        self.default_name = '_data_log.txt'
+        self.default_name = '_temp_data.txt'
 
     def connect_to_sensor(self):
         self.device.connect()
         self.signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(self.device.board)
         self.logger = create_voidp(lambda fn: libmetawear.mbl_mw_datasignal_log(self.signal, None, fn), resource = "acc_logger")
+        logging.info('metawear device connected')
         return 1
 
     def gather_data(self, seconds=3):
@@ -69,20 +79,23 @@ class Sensor():
             libmetawear.mbl_mw_logging_start(self.device.board, 0)
             libmetawear.mbl_mw_acc_enable_acceleration_sampling(self.device.board)
             libmetawear.mbl_mw_acc_start(self.device.board)
+            logging.info('data gathering started')
 
             time.sleep(seconds)
 
             libmetawear.mbl_mw_acc_stop(self.device.board)
             libmetawear.mbl_mw_acc_disable_acceleration_sampling(self.device.board)
             libmetawear.mbl_mw_logging_stop(self.device.board)
+            logging.info('data gathering stopped')
 
         except RuntimeError as err:
             print(err)
+            logging.info('runtime error in gather_data() occurred')
             return 0
 
         return 1
 
-    def download_data(self, name):
+    def download_data(self, name='blank'):
         try:
             libmetawear.mbl_mw_settings_set_connection_parameters(self.device.board, 7.5, 7.5, 0, 6000)
             time.sleep(1.0)
@@ -110,11 +123,13 @@ class Sensor():
             f.close()
             self.process_data(name)
             os.remove(name + self.default_name)
+            logging.info('data downloaded')
 
             return 1
 
         except RuntimeError as err:
             print(err)
+            logging.info('runtime error in download_data() occurred')
             return 0
 
     def process_data(self, name):
@@ -132,7 +147,7 @@ class Sensor():
             rows[epoch] =  [x, y, z]
 
         df = DataFrame(rows.values(), index=rows.keys(), columns=['X', 'Y', 'Z'])
-        df.to_csv(name + '_data.csv')
+        df.to_csv('/home/nate/Projects/machine-learning/roomba_tracking/data/{0}_{1}_data.csv'.format(__now__, name))
 
     def reset_device(self):
         libmetawear.mbl_mw_debug_reset(self.device.board)
