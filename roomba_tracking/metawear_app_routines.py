@@ -1,4 +1,5 @@
 from metawear_app_core import Sensor
+import sys
 
 def base_routine(name, seconds):
     """
@@ -19,3 +20,6 @@ def base_routine(name, seconds):
     s.download_data(name)
     s.reset_device()
     print('Routine: ' + name + ' has completed.')
+
+if __name__ == "__main__":
+    base_routine(sys.argv[1], sys.argv[2])

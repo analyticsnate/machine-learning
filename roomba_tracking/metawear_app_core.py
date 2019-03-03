@@ -12,7 +12,7 @@ from datetime import datetime
 
 __datefmt__ = '%Y%m%d %I:%M:%S'
 __now__ = str(int(time.time()))
-__here__ = '/home/nate/Projects/machine-learning/roomba_tracking'
+__here__ = '/home/pi/Projects/machine-learning/roomba_tracking'
 
 logging.basicConfig(filename='{0}/logs/{1}_metawear.log'.format(__here__, __now__), filemode='w', level=logging.INFO, 
     format='%(asctime)s - %(levelname)s - %(message)s', datefmt=__datefmt__)
@@ -76,13 +76,14 @@ class Sensor():
         return 1
 
     def gather_data(self, seconds=3):
+
         try:
             libmetawear.mbl_mw_logging_start(self.device.board, 0)
             libmetawear.mbl_mw_acc_enable_acceleration_sampling(self.device.board)
             libmetawear.mbl_mw_acc_start(self.device.board)
             logging.info('data gathering started')
 
-            time.sleep(seconds)
+            time.sleep(int(seconds))
 
             libmetawear.mbl_mw_acc_stop(self.device.board)
             libmetawear.mbl_mw_acc_disable_acceleration_sampling(self.device.board)
@@ -148,6 +149,7 @@ class Sensor():
             rows[epoch] =  [x, y, z]
 
         df = DataFrame(rows.values(), index=rows.keys(), columns=['X', 'Y', 'Z'])
+        logging.info('row count ' + str(len(df)))
         df.to_csv('{0}/data/{1}_{2}_data.csv'.format(__here__, __now__, name))
 
     def reset_device(self):
