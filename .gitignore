@@ -107,3 +107,8 @@ roomba_tracking/mbient_log_acc.py
 roomba_tracking/metawear_cleanse.py
 roomba_tracking/data/
 roomba_tracking/logs/
+market-basket-analysis/*.csv
+geospatial/Address_Points.csv
+geospatial/Residential_Address_Points.csv
+geospatial/Untitled.ipynb
+market-basket-analysis/Untitled.ipynb
