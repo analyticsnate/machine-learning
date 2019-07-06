@@ -1,7 +1,10 @@
 import sys
 import os
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QApplication
-from metawear_gui import *
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from metawear_gui_2 import *
 from mbientlab.metawear import MetaWear, libmetawear, parse_value, create_voidp, create_voidp_int
 from mbientlab.metawear.cbindings import *
 import time
@@ -9,10 +12,11 @@ from threading import Event
 from pandas import DataFrame
 import logging
 from datetime import datetime
+import random
 
 __datefmt__ = '%Y%m%d %I:%M:%S'
 __now__ = str(int(time.time()))
-__here__ = '/home/pi/Projects/machine-learning/roomba_tracking'
+__here__ = '/home/nate/Projects/machine-learning/roomba_tracking'
 
 logging.basicConfig(filename='{0}/logs/{1}_metawear.log'.format(__here__, __now__), filemode='w', level=logging.INFO, 
     format='%(asctime)s - %(levelname)s - %(message)s', datefmt=__datefmt__)
@@ -27,6 +31,8 @@ class MyForm(QDialog):
         self.ui.buttonGatherData.clicked.connect(self.buttonGatherData)
         self.ui.buttonExit.clicked.connect(self.exiting)
         self.ui.buttonDownloadData.clicked.connect(self.buttonDownloadData)
+        self.ui.buttonPlot.clicked.connect(self.plot)
+
         self.show()
 
     def buttonConnnect(self):
@@ -57,6 +63,26 @@ class MyForm(QDialog):
             self.ui.labelDownloadData.setText('Data saved.')
         else:
             self.ui.labelDownloadData.setText('Failed')
+
+    def plot(self):
+        ''' plot some random stuff '''
+
+        canvas = FigureCanvas(self.ui.figure)
+
+        # random data
+        data = [random.random() for i in range(10)]
+
+        # create an axis
+        ax = self.ui.figure.add_subplot(111)
+
+        # discards the old graph
+        ax.clear()
+
+        # plot data
+        ax.plot(data, '*-')
+
+        # refresh canvas
+        canvas.draw()
 
     def exiting(self):
         s.reset_device
@@ -124,7 +150,7 @@ class Sensor():
             # close the file, process the data into a csv, then delete the original file
             f.close()
             self.process_data(name)
-            os.remove(name + self.default_name)
+            # os.remove(name + self.default_name)
             logging.info('data downloaded')
 
             return 1
@@ -152,8 +178,19 @@ class Sensor():
         logging.info('row count ' + str(len(df)))
         df.to_csv('{0}/data/{1}_{2}_data.csv'.format(__here__, __now__, name))
 
+    # stream data
+    # implement multithreading (or some similar functionality)
+    # stream metawear data to a file
+    # each second during stream, run second thread that processes the file
+    # and converts it to a proper data format in a csv file
+    # might need to implement a queue of this, or increase from 1 second to 2
+    # also need to figure out mass load into mysql
+    # might be able to do streaming analytics on this data
+    # calculate std dev, mean, median, range for each second's worth of data
+
     def reset_device(self):
         libmetawear.mbl_mw_debug_reset(self.device.board)
+        logging.info('device reset')
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
