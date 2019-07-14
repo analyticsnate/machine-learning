@@ -1,0 +1,5 @@
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.canvas.setGeometry(QtCore.QRect(0, 0, 428, 247))
+
+        
